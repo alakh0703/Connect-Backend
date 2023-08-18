@@ -5,7 +5,9 @@ const {User, ReceiveEmail, SendEmail} = require('../DB/Schema');
 const jwt = require('jsonwebtoken');
 const secretKey = "secretKey";
 const MongoClient = require('mongodb').MongoClient;
-const uri = "mongodb://0.0.0.0/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+1.10.1";
+// const uri = "mongodb://0.0.0.0/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+1.10.1";
+const uri = "mongodb+srv://alakh7:Al%40070303@cluster0.5cu8i8d.mongodb.net/"
+
 const ObjectId = require('mongodb').ObjectId;
 
 
