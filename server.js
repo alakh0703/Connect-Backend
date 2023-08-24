@@ -7,7 +7,7 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require("mongoose");
 const mailRouter = require('./routes/cmail.router');
-
+const taskRouter = require('./routes/tasks.router');
 const app = express();
 
 
@@ -37,6 +37,7 @@ app.get('/',(req,res) => {
 app.use('/connect/users', userRouter);
 
 app.use('/connect/email', mailRouter);
+app.use('/connect/tasks', taskRouter);
 app.listen(PORT, () => {
     console.log('Server listening on port 3000');
     } 

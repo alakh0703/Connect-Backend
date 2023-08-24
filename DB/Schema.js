@@ -8,6 +8,17 @@ const UserSchema = new mongoose.Schema({
 
 });
 
+const TaskSchema = new mongoose.Schema({
+    UserID: String,
+    pendingTask: Array,
+    completedTask: Array
+});
+
+const TaskkSchema = new mongoose.Schema({
+    description: String,
+    completed: Boolean
+});
+
 const SendEmailSchema = new mongoose.Schema({
     from: String,
     to: String,
@@ -30,6 +41,8 @@ const receiveEmailSchema = new mongoose.Schema({
 const User = mongoose.model('User', UserSchema);
 const SendEmail = mongoose.model('SendEmail', SendEmailSchema);
 const ReceiveEmail = mongoose.model('ReceiveEmail', receiveEmailSchema);
+const Task = mongoose.model('Task', TaskSchema);
+const Taskk = mongoose.model('Taskk', TaskkSchema);
 
 
-module.exports = {User, SendEmail, ReceiveEmail};
+module.exports = {User, SendEmail, ReceiveEmail, Task, Taskk};

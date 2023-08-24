@@ -1,7 +1,7 @@
 const users = require('../models/user.model');
 // require bcrypt
 const bcrypt = require('bcryptjs');
-const {User, ReceiveEmail, SendEmail} = require('../DB/Schema');
+const {User, ReceiveEmail, SendEmail, Task, Taskk} = require('../DB/Schema');
 const jwt = require('jsonwebtoken');
 const secretKey = "secretKey";
 const MongoClient = require('mongodb').MongoClient;
@@ -40,6 +40,9 @@ async function register(req,res) {
         }
 
     });
+
+  
+
     console.log("Connecting to MongoDB")
     const client = new MongoClient(uri)
 
@@ -56,9 +59,23 @@ async function register(req,res) {
     console.log(result2);
     // res.send(result2);
     console.log("ID: " + result.insertedId)
-
+    // convert ObjectID to string
+    const id_ = result.insertedId.toString();
     // id, secret key, options, callback
+    console.log("Creating new Task...")
+    console.log("ID: ",id_)
+    const newTask = new Task({
+        pendingTask: Array(),
+        completedTask: Array(),
+        UserID: id_
+    });
+    console.log("New Task: ",newTask)
+    const TaskCollection = database.collection("tasks");
+    const result3 = await TaskCollection.insertOne(newTask);
+    console.log("TASK: ",result3)
     
+
+
     jwt.sign({id : result.insertedId}, secretKey,{expiresIn: 60*30}, (err, token) => {
         if(err) throw err;
         console.log("TOKEN: ",token)
@@ -202,16 +219,7 @@ catch (error) {
 }
 
 async function getIdFromToken(token){
-       // console.log(req)s
-    //   console.log("TOKEN: " + token)
-       // remove first and last character
-       console.log("Retrieving ID from token...")
-       console.log(token)
-    //    console.log(token)
-    //    const token2 = token.slice(1, -1);
-    //    console.log("TOKEN: " + token2)
-       // console.log(req)
-    //    console.log("\n\n\nTOKEN: " + token)
+     
        if(!token){
           
            return;
@@ -219,29 +227,24 @@ async function getIdFromToken(token){
        try {
         if(token.startsWith('"') && token.endsWith('"')) {
             token = token.slice(1, -1);
-            // console.log("TOKEN 1: " + token)
+  
         }
         else {
-            // console.log("TOKEN 2: " + token)
             token = token;
         }
 
-            // token = token.slice(1, -1);     
-            // token = token;
-            //   console.log("TOKEN 2: " + token)
+ 
             
            const verified = jwt.verify(token, secretKey, (err, decoded) => {
                if(err) {
                    console.log(err)
                }
                else {
-                //    console.log("DECODED: ",decoded)
                    return decoded;
                }
            });
    
            const id = verified.id;
-            //   console.log("ID: " + id)
             return id;
 
          }
