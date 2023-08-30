@@ -7,7 +7,14 @@ const UserSchema = new mongoose.Schema({
 
 
 });
+const sqSchema = new mongoose.Schema({
+    userID: String,
+    sq1: String,
+    sq2: String,
+    sa1: String,
+    sa2: String
 
+});
 const TaskSchema = new mongoose.Schema({
     UserID: String,
     pendingTask: Array,
@@ -43,6 +50,7 @@ const SendEmail = mongoose.model('SendEmail', SendEmailSchema);
 const ReceiveEmail = mongoose.model('ReceiveEmail', receiveEmailSchema);
 const Task = mongoose.model('Task', TaskSchema);
 const Taskk = mongoose.model('Taskk', TaskkSchema);
+const SQs = mongoose.model('SQ', sqSchema);
 
 
-module.exports = {User, SendEmail, ReceiveEmail, Task, Taskk};
+module.exports = {User, SendEmail, ReceiveEmail, Task, Taskk, SQs};

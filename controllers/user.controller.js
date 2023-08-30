@@ -1,9 +1,11 @@
 const users = require('../models/user.model');
 // require bcrypt
 const bcrypt = require('bcryptjs');
-const {User, ReceiveEmail, SendEmail, Task, Taskk} = require('../DB/Schema');
+const {User, ReceiveEmail, SendEmail, Task, Taskk, SQs} = require('../DB/Schema');
 const jwt = require('jsonwebtoken');
+const { get } = require('mongoose');
 const secretKey = "secretKey";
+
 const MongoClient = require('mongodb').MongoClient;
 // const uri = "mongodb://0.0.0.0/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+1.10.1";
 const uri = "mongodb+srv://alakh7:Al%40070303@cluster0.5cu8i8d.mongodb.net/"
@@ -15,24 +17,14 @@ const ObjectId = require('mongodb').ObjectId;
 
 async function register(req,res) {
     console.log(req.body)
-    const {name, email, password} = req.body;
-    // console.log(req.body)
-    // const user = {
-    //     id: users.length + 1,
-    //     name,
-    //     email,
-    //     password
-    // };
-
-//     const salt = await bcrypt.genSalt(10);
-//   const hashedPass= await bcrypt.hash(password, salt);
-   
-
+    const {name, email, password, securityQuestion1, securityQuestion2, securityAnswer1, securityAnswer2} = req.body;
+ 
     
     // res.send(user);
     const newUser = new User({
         email: email,
         password: password,
+
         name: name,
         cmail: {
             sent: Array(),
@@ -40,6 +32,8 @@ async function register(req,res) {
         }
 
     });
+
+
 
   
 
@@ -61,6 +55,22 @@ async function register(req,res) {
     console.log("ID: " + result.insertedId)
     // convert ObjectID to string
     const id_ = result.insertedId.toString();
+
+    console.log("Adding securityy questions to database...")
+
+    const newSQ = new SQs({
+        userID: id_,
+        sq1: securityQuestion1,
+        sq2: securityQuestion2,
+        sa1: securityAnswer1,
+        sa2: securityAnswer2
+    });
+
+    const SQCollection = database.collection("SQs");
+    const result4 = await SQCollection.insertOne(newSQ);
+    console.log("SQ: ",result4)
+
+    
     // id, secret key, options, callback
     console.log("Creating new Task...")
     console.log("ID: ",id_)
@@ -90,6 +100,8 @@ async function register(req,res) {
     await client.close();
   }
 }
+
+
 
 async function login(req,res) {
     
@@ -286,6 +298,44 @@ async function getIdFromToken(token){
 
 
 // }
+async function deleteMyAccount(req,res){
+    console.log("Deleting Account...")
+    console.log(req.body)
+    const {token} = req.body;
+    console.log(token)
+    const id = await getIdFromToken(token);
+    console.log("ID: ",id)
+    const client = new MongoClient(uri)
+
+    try {
+        // Assuming `uri` is defined somewhere with the MongoDB connection string
+        await client.connect();
+
+        const database = client.db("Connect");
+        const userCollection = database.collection("users");
+
+        const query = { _id: new ObjectId(id) };
+        console.log("Deleting Account from database...");
+
+        const result = await userCollection.deleteOne(query);
+        
+        if (result) {
+            res.send("Account Deleted");
+        } else {
+            res.status(404).send("User not found.");
+        }
+    }
+
+    catch (error) {
+        console.error(`Error deleting account: ${error}`);
+        res.status(400).send('Invalid Token');
+    }
+    finally {
+        if (client) {
+            await client.close();
+        }
+    }
+}
 
 async function retriveMails(req, res) {
     console.log("Getting Token from query...");
@@ -321,10 +371,218 @@ async function retriveMails(req, res) {
         }
     }
 }
+async function getSQs(ids) {
+    console.log("Getting Security Questions...",ids)
+    /// convert object to string
+    const id = ids.toString();
+  console.log(id)
+    const client = new MongoClient(uri)
+    try {
+
+        const database = await client.db("Connect");
+
+        const SQCollection = await database.collection("SQs");
+// get a document
+
+
+        const query = { userID: id };
+        console.log("Query: ",query)
+        // {"_id": ObjectId('64c0c40562dda2c9b3b806ae')}
+     
+        const result = await SQCollection.find({userID: id}).toArray()
+
+        return result[0];
+
+}  catch (error) {
+            
+            console.error(`Failed to find document: ${error}`);
+        }
+
+        finally {
+            await client.close();
+            }
+
+}
+
+        
+        
+async function checkExistingUser(req,res) {
+    console.log("Checking if user exists...")
+    const {email} = req.body;
+    console.log(req)
+    const client = new MongoClient(uri)
+    try {
+
+        const database = await client.db("Connect");
+        
+        const userCollection = await database.collection("users");
+// get a document
+        console.log("first")
+        const query = { email: email };
+        console.log("Query: ",email)
+        // {"_id": ObjectId('64c0c40562dda2c9b3b806ae')}
+        await userCollection.find(query).toArray()
+        .then(async (result)=>{
+            console.log(result)
+            const id = result[0]._id;
+            console.log("ID: ",id)
+          const SQ2 = await getSQs(id);
+        
+       
+           res.send(SQ2);
+            
+        })
+        .catch(err => console.error(`Failed to find document: ${err}`))
+        .finally(() => client.close());
+
+        console.log("second")
+}  catch (error) {
+
+        console.error(`Failed to find document: ${error}`);
+    }
+    finally {
+        await client.close();
+        }
+
+}
+
+const resetPassword = async (req, res) => {
+    console.log("Resetting Password...")
+    const {email, password} = req.body;
+    console.log(req)
+    const client = new MongoClient(uri)
+    try {
+
+        const database = await client.db("Connect");
+        
+        const userCollection = await database.collection("users");
+
+// get a document
+        // find user with email and update password
+
+        // hash the password
+        const query = { email: email };
+        const update = { $set: {password: password} };
+        const options = { upsert: true };
+        console.log("Query: ",query)
+        // {"_id": ObjectId('64c0c40562dda2c9b3b806ae')}
+        await userCollection.updateOne(query, update, options)
+        .then(result => res.send(result))
+        .catch(err => console.error(`Failed to find document: ${err}`))
+        .finally(() => client.close());
+
+        console.log("PASSWORD RESET")
+}
+
+
+catch (error) {
+        console.error(`Failed to find document: ${error}`);
+    }
+    finally {
+        await client.close();
+        }
+}
+
+
+const updatePassword = async (req, res) => {
+    console.log("Updating Password...")
+    const {oldPass, newPass, newName, token} = req.body;
+    console.log(req)
+
+    // get id from token
+    const id = await getIdFromToken(token);
+    console.log("ID: ",id)
+
+    const client = new MongoClient(uri)
+    try {
+
+        const database = await client.db("Connect");
+        
+        const userCollection = await database.collection("users");
+
+// get a document
+
+        // get 
+        const query = { _id: new ObjectId(id) };
+        const update = { $set: {password: newPass, name: newName} };
+        const options = { upsert: true };
+        var verified = false;
+        // {"_id": ObjectId('64c0c40562dda2c9b3b806ae')}
+        const z = await userCollection.findOne(query);
+
+        console.log("Z: ",z)
+        const actualPass = z.password;
+        const isMatch = await bcrypt.compare(oldPass, actualPass);
+        console.log(isMatch)
+        if(isMatch) {
+            verified = true;
+        }
+        else {
+            verified = false;
+        }
+
+        if(verified) {
+            await userCollection.updateOne(query, update, options)
+            .then(result => res.send(result))
+            .catch(err => console.error(`Failed to find document: ${err}`))
+            .finally(() => client.close());
+        }
+        else {
+            res.send("Password Incorrect");
+        }
+       
+        console.log("PASSWORD UPDATED")
+}
+
+
+catch (error) {
+        console.error(`Failed to find document: ${error}`);
+    }
+    finally {
+        await client.close();
+        }
+}
+
+
+// getting all already taken emails
+const getAllEmails = async (req,res) => {
+    const client = new MongoClient(uri)
+    try {
+
+        const database = await client.db("Connect");
+        
+        const userCollection = await database.collection("users");
+
+// get a document
+        console.log("avonwro")
+        const query = {};
+        const result = await userCollection.find(query, {projection: {email: 1}}).toArray();
+        const emails = [];
+        result.forEach(element => {
+            emails.push(element.email);
+        });
+        console.log(emails)
+        res.send(emails);
+}
+
+
+catch (error) {
+        console.error(`Failed to find document: ${error}`);
+    }
+    finally {
+        await client.close();
+        }
+}
+
 module.exports = {
     register,
     login,
     verifyToken,
     getIdFromToken,
-    retriveMails
+    retriveMails,
+    deleteMyAccount,
+    checkExistingUser,
+    resetPassword,
+    updatePassword,
+    getAllEmails
 };
