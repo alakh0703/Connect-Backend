@@ -293,7 +293,7 @@ async function markUnimportant(req,res){
 }
 
 const deleteMail = async (req, res) => {
-  console.log("\n\n\n\n\n\n\Deleting the Mail")
+  console.log("\n\n\n\n\n\n\nDeleting the Mail")
     const {token, unique_id} = req.body;
     console.log(token, unique_id)
     const userId = await getIdFromToken(token);
@@ -302,10 +302,12 @@ const deleteMail = async (req, res) => {
     
     const database = await client.db("Connect");
     const userCollection = await database.collection("users");
-
+    
 
     const result = await userCollection.findOne({_id: new ObjectId(userId)}, {projection: {cmail: 1}});
+    console.log("Result",result)
     const received = result.cmail.received;
+
     const sent = result.cmail.sent;
     console.log(received)
     // console.log(sent)
